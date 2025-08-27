@@ -1,0 +1,52 @@
+$primary: #4169e1;
+
+Screen {
+        align: center top;
+}
+
+Overview {
+    padding: 0 1;
+    margin: 1 2;
+    height: 100%;
+
+    border: $primary round;
+    border-title-color: $primary;
+    border-title-align: center;
+
+    background: rgba(0,0,0,0);
+    scrollbar-size: 0 1;
+    scrollbar-color: $primary;
+
+    .datatable--cursor {
+        background: $background;
+        color: $primary;
+    }
+    .datatable--header {
+        background: $background;
+    }
+}
+
+CreateResourceScreen {
+    align: center middle;
+}
+
+CreateTaskModal {
+    width: 40%;
+    padding: 1 1;
+    border: $primary round;
+    border-title-align: center;
+    align: center middle;
+
+    Input {
+        &:focus {
+            background-tint: $primary;
+            border: tall $primary
+        }
+    }
+
+    Label {
+        color: #ff4545;
+        padding: 1 0 0 1;
+        text-style: bold;
+    }
+}

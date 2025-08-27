@@ -1,1 +1,1 @@
-# yarukotu-tui
+# yarukoto-tui
