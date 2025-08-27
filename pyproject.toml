@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "yarukoto-tui"
+version = "0.0.1"
+description = ""
+authors = ["mrmn2"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11 <4.0"
+textual = "==5.3.0"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "==1.8.2"
+black = "==25.1.0"
+flake8 = "==7.3.0"
+pytest = "==8.4.1"
+pytest-cov = "==6.2.1"
+textual-dev = "==1.7.0"
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "UaC.core.settings"
+
+[tool.bandit]
+exclude_dirs = ["tests", "path/to/file"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 120
+skip_gitignore = true
