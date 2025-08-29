@@ -5,7 +5,7 @@ from classes import BaseResourceClass, Column, TableData, Task, TaskKind, Worksp
 
 class DataProcessor(ABC):
     @classmethod
-    def get_table_data(cls, workspaces, filter_dict: dict) -> TableData:
+    def get_table_data(cls, workspaces: dict[str, Workspace], filter_dict: dict) -> TableData:
         columns = cls._get_columns()
 
         resources = cls._get_resources(workspaces, filter_dict)
@@ -51,8 +51,8 @@ class TasksProcessor(DataProcessor):
 
     @classmethod
     def _get_resources(cls, workspaces: dict[str, Workspace], filter_dict: dict) -> list[Task]:
-        if filter_dict.get('workspace_name'):
-            workspaces = [workspaces[filter_dict['workspace_name']]]
+        if filter_dict.get('workspace_id'):
+            workspaces = [workspaces[filter_dict['workspace_id']]]
         else:
             workspaces = workspaces.values()
 
@@ -92,8 +92,19 @@ class TasksProcessor(DataProcessor):
         kind: TaskKind = TaskKind.TO_DO,
         description: str = '',
         due_datetime: str = '',
+        workspace_id: str = '',
     ) -> Task:
-        return Task(name=name, id=id, priority=priority, kind=kind, description=description, due_datetime=due_datetime)
+        task = Task(
+            name=name,
+            id=id,
+            priority=priority,
+            kind=kind,
+            description=description,
+            due_datetime=due_datetime,
+            workspace_id=workspace_id,
+        )
+
+        return task
 
     @classmethod
     def get_default_column_width(cls) -> int | str:

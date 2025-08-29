@@ -1,9 +1,9 @@
 from asyncio import sleep
-from dataclasses import dataclass
 from datetime import datetime
 
-from classes import ResourceKind, TaskKind, Workspace
-from data_processors import DataProcessor, TasksProcessor, WorkspacesProcessor
+from classes import ResourceKind
+from data_processors import TasksProcessor, WorkspacesProcessor
+from file_io import FileIO
 from textual.app import App, Binding, ComposeResult
 from textual.containers import VerticalGroup
 from textual.message import Message
@@ -16,27 +16,43 @@ from textual.worker import Worker, WorkerState
 class AppStateMixin:
     app = None
 
-    def get_app_workspaces(self):
+    def get_current_workspaces(self):
         return self.app.state.workspaces
 
-    def get_app_current_workspace_name(self):
-        return self.app.state.current_workspace_name
+    def get_current_workspace_id(self):
+        return self.app.state.current_workspace_id
 
-    def get_app_data_processor(self):
-        return self.app.state.data_processor
+    def get_current_data_processor(self):
+        if self.app.state.current_resource_kind == ResourceKind.TASK:
+            return TasksProcessor
+        else:
+            return WorkspacesProcessor
+
+    def get_current_task_kind(self):
+        return self.app.state.current_task_kind
+
+    def get_current_filter_dict(self):
+        if self.app.state.current_resource_kind == ResourceKind.TASK:
+            workspaces = self.app.state.workspaces
+            current_workspace_id = self.app.state.current_workspace_id
+            current_workspace_name = workspaces[current_workspace_id].name
+
+            return {
+                'workspace_id': current_workspace_id,
+                'workspace_name': current_workspace_name,
+                'kind': self.app.state.current_task_kind,
+            }
+        else:
+            return dict()
 
 
 class Overview(DataTable, AppStateMixin):
     def set_content(self):
         self.clear(columns=True)
 
-        data_processor = self.get_app_data_processor()
-        workspaces = self.get_app_workspaces()
-        current_workspace_name = self.get_app_current_workspace_name()
-
-        table_data = data_processor.get_table_data(
-            workspaces, {'workspace_name': current_workspace_name, 'kind': TaskKind.TO_DO}
-        )
+        data_processor = self.get_current_data_processor()
+        workspaces = self.get_current_workspaces()
+        table_data = data_processor.get_table_data(workspaces, self.get_current_filter_dict())
 
         for column in table_data.columns:
             width = self.adjust_column_width(
@@ -53,7 +69,7 @@ class Overview(DataTable, AppStateMixin):
 
     def adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
         if width == 'auto':
-            data_processor = self.get_app_data_processor()
+            data_processor = self.get_current_data_processor()
 
             width = (
                 table_width
@@ -130,8 +146,8 @@ class CreateResourceScreen(Screen):
     ]
 
     # to be changed
-    def __init__(self, create_modal_class: type[CreateElementModal], resource_kind: ResourceKind):
-        super().__init__()
+    def __init__(self, create_modal_class: type[CreateElementModal], resource_kind: ResourceKind, id: str):
+        super().__init__(id=id)
 
         self.create_modal_class = create_modal_class
         self.resource_kind = resource_kind
@@ -170,7 +186,6 @@ class CreateResourceScreen(Screen):
                 error_label.display = True
                 return
 
-        # self.data_processor.create(**creation_kwargs_dict)
         self.post_message(self.ResourceCreated(creation_kwargs_dict, self.resource_kind))
         self.dismiss(True)
 
@@ -185,7 +200,7 @@ class Yarukoto(App):
     BINDINGS = [('ctrl+t', 'create_task', 'Create Task')]
 
     def __init__(self, *args, **kwargs):
-        self.state = AppState(workspaces=dict(), current_workspace_name='default', data_processor=TasksProcessor)
+        self.state = None
 
         super().__init__(*args, **kwargs)
 
@@ -200,7 +215,8 @@ class Yarukoto(App):
     def action_create_task(self) -> None:
         """An action to toggle dark mode."""
 
-        self.push_screen(CreateResourceScreen(CreateTaskModal, ResourceKind.TASK))
+        if self.screen.id != "creation_screen":
+            self.push_screen(CreateResourceScreen(CreateTaskModal, ResourceKind.TASK, id='creation_screen'))
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Called when the worker state changes."""
@@ -210,20 +226,24 @@ class Yarukoto(App):
             overview.set_content()
 
     def on_resize(self, event):
-        if self.state.workspaces:
+        if self.state:
             overview = self.query_one(Overview)
             overview.set_content()
 
     def on_create_resource_screen_resource_created(self, message: CreateResourceScreen.ResourceCreated):
+        creation_kwargs_dict = message.creation_kwargs_dict
+
         if message.resource_kind == ResourceKind.TASK:
             data_processor = TasksProcessor
+            creation_kwargs_dict['workspace_id'] = self.state.current_workspace_id
         elif message.resource_kind == ResourceKind.WORKSPACE:
             data_processor = WorkspacesProcessor
 
-        created_resource = data_processor.create(**message.creation_kwargs_dict)
+        created_resource = data_processor.create(**creation_kwargs_dict)
+        FileIO.write_resource(created_resource)
 
         if message.resource_kind == ResourceKind.TASK:
-            self.state.workspaces[self.state.current_workspace_name].task_dict[created_resource.id] = created_resource
+            self.state.workspaces[self.state.current_workspace_id].task_dict[created_resource.id] = created_resource
         elif message.resource_kind == ResourceKind.WORKSPACE:
             self.state.workspaces[created_resource.name] = created_resource
 
@@ -231,22 +251,10 @@ class Yarukoto(App):
         overview.set_content()
 
     async def load_data(self) -> None:
-        # task_1 = Task('✓ Update Kubernetes Version on preprod', due_datetime='2025/08/26', priority=1)
-        # task_2 = Task('□ Develop PoC of YaruKoto', due_datetime='2025/08/28', priority=0)
-        # task_3 = Task('□ Implement feature a and b to do', due_datetime='2025/09/26', priority=5)
-        # tasks = [task_1, task_2, task_3]
+        self.state = FileIO.load_data()
 
-        workspace = Workspace('default', dict())
-        self.state.workspaces = {workspace.name: workspace}
-
-        await sleep(0.5)
-
-
-@dataclass
-class AppState:
-    workspaces: dict[str, Workspace]
-    current_workspace_name: str
-    data_processor: type[DataProcessor]
+        # add minor delay, so that table gets mounted once and therefore the screen sice is set.
+        await sleep(0.1)
 
 
 if __name__ == '__main__':
