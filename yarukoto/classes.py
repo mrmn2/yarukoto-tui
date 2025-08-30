@@ -70,7 +70,7 @@ class Task(BaseResourceClass):
         description: str = '',
         due_datetime: str = '',
         creation_datetime: str = '',
-        id: str = '',
+        id: str = str(uuid4()),
     ):
         self.name = name
         self.description = description
@@ -78,11 +78,8 @@ class Task(BaseResourceClass):
         self.kind = kind
         self.status = TaskStatus.TO_DO
         self.workspace_id = workspace_id
+        self.id = id
 
-        if id:
-            self.id = id
-        else:
-            self.id = str(uuid4())
         if due_datetime:
             if len(due_datetime) == 10:
                 due_datetime = f'{due_datetime}-23:59:59'
@@ -102,7 +99,7 @@ class Task(BaseResourceClass):
             task_name = f'[ ] {self.name}'
 
         return Row(
-            str(self.id),
+            self.id,
             (task_name, humanize_date(self.due_datetime), self.priority, humanize_date(self.creation_datetime)),
         )
 
@@ -129,14 +126,16 @@ class Task(BaseResourceClass):
 
 
 class Workspace(BaseResourceClass):
-    def __init__(self, name: str, task_dict: dict[str, Task], id: str = '', creation_datetime: str = ''):
+    def __init__(
+        self, name: str, task_dict: dict[str, Task] = None, id: str = str(uuid4()), creation_datetime: str = ''
+    ):
         self.name = name
-        self.task_dict = task_dict
+        self.id = id
 
-        if id:
-            self.id = id
+        if task_dict:
+            self.task_dict = task_dict
         else:
-            self.id = str(uuid4())
+            self.task_dict = dict()
 
         if creation_datetime:
             self.creation_datetime = datetime.strptime(creation_datetime, self.DATE_TIME_FORMAT)
@@ -145,7 +144,7 @@ class Workspace(BaseResourceClass):
 
     def to_row(self) -> Row:
         return Row(
-            str(self.id),
+            self.id,
             (self.name, len(self.task_dict.keys()), len(self.task_dict.keys()), humanize_date(self.creation_datetime)),
         )
 

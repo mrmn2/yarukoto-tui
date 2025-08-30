@@ -17,7 +17,7 @@ class DataProcessor(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict):
+    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
         pass
 
     @classmethod
@@ -35,9 +35,15 @@ class DataProcessor(ABC):
     def _apply_filters(resources: list[BaseResourceClass], filter_dict: dict) -> list[BaseResourceClass]:
         pass
 
+    @classmethod
+    def create(cls, **kwargs) -> BaseResourceClass:
+        created_resource = cls._create_resource(**kwargs)
+
+        return created_resource
+
     @staticmethod
     @abstractmethod
-    def create(name: str, id: str) -> BaseResourceClass:
+    def _create_resource(cls, **kwargs) -> BaseResourceClass:
         pass
 
     @classmethod
@@ -64,7 +70,7 @@ class TasksProcessor(DataProcessor):
         return tasks
 
     @classmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict):
+    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
         workspace_name = filter_dict.get('workspace_name', 'all')
 
         return f'{str(filter_dict.get('kind', TaskKind.TO_DO))}({workspace_name})[{len(resources)}]'
@@ -85,24 +91,8 @@ class TasksProcessor(DataProcessor):
         return resources
 
     @staticmethod
-    def create(
-        name: str,
-        id: str = '',
-        priority: int = 0,
-        kind: TaskKind = TaskKind.TO_DO,
-        description: str = '',
-        due_datetime: str = '',
-        workspace_id: str = '',
-    ) -> Task:
-        task = Task(
-            name=name,
-            id=id,
-            priority=priority,
-            kind=kind,
-            description=description,
-            due_datetime=due_datetime,
-            workspace_id=workspace_id,
-        )
+    def _create_resource(**kwargs) -> Task:
+        task = Task(**kwargs)
 
         return task
 
@@ -115,7 +105,7 @@ class WorkspacesProcessor(DataProcessor):
     __DEFAULT_COLUMN_WIDTH = 'auto'
 
     @classmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict):
+    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
         return f'WORKSPACES[{len(resources)}])'
 
     @classmethod
@@ -142,5 +132,5 @@ class WorkspacesProcessor(DataProcessor):
         return cls.__DEFAULT_COLUMN_WIDTH
 
     @staticmethod
-    def create(name: str, id: str = '', task_dict: dict[str, Task] = None) -> Workspace:
-        return Workspace(name=name, id=id, task_dict=task_dict)
+    def _create_resource(**kwargs) -> Workspace:
+        return Workspace(**kwargs)

@@ -9,11 +9,11 @@ class FileIO:
     INDENT = 4
 
     @staticmethod
-    def _get_app_path():
+    def _get_app_path() -> Path:
         return Path(environ.get('HOME')) / '.yarukoto'
 
     @classmethod
-    def load_data(cls):
+    def load_data(cls) -> AppState:
         app_path = cls._get_app_path()
         config_file_path = app_path / 'config.json'
         workspaces_file_path = app_path / 'workspaces.json'
@@ -24,6 +24,20 @@ class FileIO:
             app_state = cls._read()
 
         return app_state
+
+    @classmethod
+    def write_resource(cls, resource: BaseResourceClass) -> None:
+        if isinstance(resource, Task):
+            cls._write_task_to_file(resource)
+        elif isinstance(resource, Workspace):
+            cls._write_workspace_to_file(resource)
+
+    @classmethod
+    def delete_resource(cls, resource_id: str, resource_kind: ResourceKind) -> None:
+        if resource_kind == ResourceKind.TASK:
+            cls._delete_task(resource_id)
+        elif resource_kind == ResourceKind.WORKSPACE:
+            cls._delete_workspace(resource_id)
 
     @classmethod
     def _read(cls) -> AppState:
@@ -75,14 +89,7 @@ class FileIO:
         return app_state
 
     @classmethod
-    def write_resource(cls, resource: BaseResourceClass):
-        if isinstance(resource, Task):
-            cls._write_task_to_file(resource)
-        elif isinstance(resource, Workspace):
-            cls._write_workspace_to_file(resource)
-
-    @classmethod
-    def _write_task_to_file(cls, task: Task):
+    def _write_task_to_file(cls, task: Task) -> None:
         file_path = cls._get_app_path() / task.workspace_id / f'{task.id}.json'
 
         if not file_path.exists():
@@ -92,7 +99,7 @@ class FileIO:
             json.dump(task.to_dict(), f, indent=4)
 
     @classmethod
-    def _write_workspace_to_file(cls, workspace: Workspace):
+    def _write_workspace_to_file(cls, workspace: Workspace) -> None:
         pass
 
     @classmethod
@@ -129,3 +136,18 @@ class FileIO:
             json.dump([default_workspace.to_dict()], f, indent=cls.INDENT)
 
         return app_state
+
+    @classmethod
+    def _delete_task(cls, resource_id: str):
+        app_path = cls._get_app_path()
+
+        for workspace_dir in app_path.iterdir():
+            if workspace_dir.is_dir():
+                try:
+                    (workspace_dir / f'{resource_id}.json').unlink()
+                except FileNotFoundError:
+                    pass
+
+    @classmethod
+    def _delete_workspace(cls, resource_id: str):
+        pass

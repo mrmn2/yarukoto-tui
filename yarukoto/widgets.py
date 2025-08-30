@@ -2,6 +2,8 @@ from classes import ResourceKind
 from data_processors import TasksProcessor, WorkspacesProcessor
 from textual.app import ComposeResult
 from textual.containers import VerticalGroup
+from textual.coordinate import Coordinate
+from textual.message import Message
 from textual.widgets import DataTable, Input, Label
 from validators import DueDateValidator, TaskNameValidator
 
@@ -24,6 +26,9 @@ class AppStateMixin:
     def get_current_task_kind(self):
         return self.app.state.current_task_kind
 
+    def get_current_resource_kind(self):
+        return self.app.state.current_resource_kind
+
     def get_current_filter_dict(self):
         if self.app.state.current_resource_kind == ResourceKind.TASK:
             workspaces = self.app.state.workspaces
@@ -40,7 +45,14 @@ class AppStateMixin:
 
 
 class Overview(DataTable, AppStateMixin):
-    BINDINGS = [('ctrl+d', 'Delete', 'Delete task')]
+    BINDINGS = [('ctrl+d', 'delete_resource', 'Delete Resource')]
+
+    class OpenDeleteModal(Message):
+        def __init__(self, resource_id: str, resource_name: str, resource_kind: ResourceKind) -> None:
+            self.resource_id = resource_id
+            self.resource_name = resource_name
+            self.resource_kind = resource_kind
+            super().__init__()
 
     def set_content(self):
         self.clear(columns=True)
@@ -59,7 +71,9 @@ class Overview(DataTable, AppStateMixin):
             )
             self.add_column(label=column.name, key=column.name, width=width)
 
-        self.add_rows(row.values for row in table_data.rows)
+        for row in table_data.rows:
+            self.add_row(*row.values, key=row.key)
+        # self.add_rows(row.values for row in table_data.rows)
         self.border_title = table_data.title
 
     def adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
@@ -79,6 +93,13 @@ class Overview(DataTable, AppStateMixin):
 
     def on_mount(self) -> None:
         self.add_column(label='Loading Data')
+
+    def action_delete_resource(self):
+        cell_key = self.coordinate_to_cell_key(Coordinate(column=self.cursor_column, row=self.cursor_row))
+        resource_id = cell_key.row_key.value
+        resource_kind = self.get_current_resource_kind()
+        resource_name = self.get_row(resource_id)[0]
+        self.post_message(self.OpenDeleteModal(resource_id, resource_name, resource_kind))
 
 
 class CreateElementModal(VerticalGroup):

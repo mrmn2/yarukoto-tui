@@ -50,3 +50,36 @@ CreateTaskModal {
         text-style: bold;
     }
 }
+
+DeleteResourceScreen {
+    align: center middle;
+
+    #dialog {
+        grid-size: 4;
+        grid-gutter: 1 0;
+        grid-rows: 1fr 3;
+        padding: 0 1;
+        width: 60;
+        height: 11;
+        border: $primary round;
+        border-title-align: center;
+    }
+
+    #question {
+        column-span: 4;
+        height: 1fr;
+        width: 1fr;
+        content-align: center middle;
+    }
+
+    Button {
+        width: auto;
+        background: $background;
+
+        &:focus {
+            text-style: $button-focus-text-style;
+            background-tint: white 100%;
+            color: $primary;
+        }
+    }
+}
