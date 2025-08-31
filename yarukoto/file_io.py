@@ -120,7 +120,7 @@ class FileIO:
             workspaces={default_workspace.id: default_workspace},
             current_workspace_id=default_workspace.id,
             current_resource_kind=ResourceKind.TASK,
-            current_task_kind=TaskKind.TO_DO,
+            current_task_kind=TaskKind.CURRENT,
         )
 
         initial_config_dict = {

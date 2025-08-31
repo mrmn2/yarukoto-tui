@@ -27,17 +27,12 @@ class TableData:
 
 
 class TaskKind(IntEnum):
-    TO_DO = 1
-    DONE = 2
+    CURRENT = 1
+    COMPLETED = 2
     BACKLOG = 3
 
     def __str__(self):
         return f'{self.name.replace('_', '-')}'
-
-
-class TaskStatus(IntEnum):
-    TO_DO = 1
-    DONE = 2
 
 
 class ResourceKind(IntEnum):
@@ -66,7 +61,7 @@ class Task(BaseResourceClass):
         name: str,
         workspace_id: str,
         priority: int = 0,
-        kind: TaskKind = TaskKind.TO_DO,
+        kind: TaskKind = TaskKind.CURRENT,
         description: str = '',
         due_datetime: str = '',
         creation_datetime: str = '',
@@ -76,7 +71,6 @@ class Task(BaseResourceClass):
         self.description = description
         self.priority = priority
         self.kind = kind
-        self.status = TaskStatus.TO_DO
         self.workspace_id = workspace_id
 
         if id:
@@ -116,7 +110,6 @@ class Task(BaseResourceClass):
             'description': self.description,
             'creation_datetime': self.creation_datetime.strftime(self.DATE_TIME_FORMAT),
             'due_datetime': due_datetime,
-            'status': self.status,
             'workspace_id': self.workspace_id,
         }
 

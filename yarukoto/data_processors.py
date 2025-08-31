@@ -72,8 +72,9 @@ class TasksProcessor(DataProcessor):
     @classmethod
     def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
         workspace_name = filter_dict.get('workspace_name', 'all')
+        task_kind = filter_dict.get('task_kind', TaskKind.CURRENT)
 
-        return f'{str(filter_dict.get('kind', TaskKind.TO_DO))}({workspace_name})[{len(resources)}]'
+        return f'{str(filter_dict.get('kind', task_kind))}({workspace_name})[{len(resources)}]'
 
     @classmethod
     def _get_columns(cls) -> list[Column]:
