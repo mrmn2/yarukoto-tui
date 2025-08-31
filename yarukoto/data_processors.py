@@ -79,8 +79,8 @@ class TasksProcessor(DataProcessor):
     def _get_columns(cls) -> list[Column]:
         columns = [
             Column('TASK', 'auto'),
-            Column('DUE', cls.__DEFAULT_COLUMN_WIDTH),
             Column('PRIORITY', cls.__DEFAULT_COLUMN_WIDTH),
+            Column('DUE', cls.__DEFAULT_COLUMN_WIDTH),
             Column('CREATED', cls.__DEFAULT_COLUMN_WIDTH),
         ]
 

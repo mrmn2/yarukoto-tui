@@ -113,7 +113,7 @@ class CreateTaskModal(CreateElementModal):
     def compose(self) -> ComposeResult:
         yield Input(
             placeholder='Task Name',
-            restrict=r'^[ \w-]*$',
+            restrict=r'^[ \w\-\_\/,;.:]*$',
             max_length=200,
             id='name',
             validate_on=[],

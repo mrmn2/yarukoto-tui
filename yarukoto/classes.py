@@ -70,7 +70,7 @@ class Task(BaseResourceClass):
         description: str = '',
         due_datetime: str = '',
         creation_datetime: str = '',
-        id: str = str(uuid4()),
+        id: str = '',
     ):
         self.name = name
         self.description = description
@@ -78,8 +78,11 @@ class Task(BaseResourceClass):
         self.kind = kind
         self.status = TaskStatus.TO_DO
         self.workspace_id = workspace_id
-        self.id = id
 
+        if id:
+            self.id = id
+        else:
+            self.id = str(uuid4())
         if due_datetime:
             if len(due_datetime) == 10:
                 due_datetime = f'{due_datetime}-23:59:59'
@@ -93,14 +96,9 @@ class Task(BaseResourceClass):
             self.creation_datetime = datetime.now()
 
     def to_row(self) -> Row:
-        if self.status == TaskStatus.DONE:
-            task_name = f'✓ {self.name}'
-        else:
-            task_name = f'[ ] {self.name}'
-
         return Row(
             self.id,
-            (task_name, humanize_date(self.due_datetime), self.priority, humanize_date(self.creation_datetime)),
+            (self.name, humanize_date(self.due_datetime), self.priority, humanize_date(self.creation_datetime)),
         )
 
     def to_dict(self) -> dict:
@@ -126,12 +124,12 @@ class Task(BaseResourceClass):
 
 
 class Workspace(BaseResourceClass):
-    def __init__(
-        self, name: str, task_dict: dict[str, Task] = None, id: str = str(uuid4()), creation_datetime: str = ''
-    ):
+    def __init__(self, name: str, task_dict: dict[str, Task] = None, id: str = '', creation_datetime: str = ''):
         self.name = name
-        self.id = id
-
+        if id:
+            self.id = id
+        else:
+            self.id = str(uuid4())
         if task_dict:
             self.task_dict = task_dict
         else:

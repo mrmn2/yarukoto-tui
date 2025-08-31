@@ -92,7 +92,7 @@ class DeleteResourceScreen(YarukotoModalScreen):
 
     def compose(self) -> ComposeResult:
         grid = Grid(
-            Label(f'Delete {str.lower(str(self.resource_kind))} "{self.resource_name[4:]}"?', id='question'),
+            Label(f'Delete {str.lower(str(self.resource_kind))} "{self.resource_name}"?', id='question'),
             Container(),
             # spaces needed for correct coloring
             Button("   Cancel   ", id="cancel", compact=True),
