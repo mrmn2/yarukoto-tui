@@ -1,9 +1,11 @@
 from classes import ResourceKind
 from data_processors import TasksProcessor, WorkspacesProcessor
+from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import VerticalGroup
+from textual.containers import Container, HorizontalGroup, VerticalGroup
 from textual.coordinate import Coordinate
 from textual.message import Message
+from textual.reactive import reactive
 from textual.widgets import DataTable, Input, Label
 from validators import DueDateValidator, TaskNameValidator
 
@@ -102,6 +104,52 @@ class Overview(DataTable, AppStateMixin):
         self.post_message(self.OpenDeleteModal(resource_id, resource_name, resource_kind))
 
 
+class Header(HorizontalGroup, AppStateMixin):
+    number_workspaces = reactive(default='', init=False)
+    number_due_today = reactive(default='')
+    number_current = reactive(default='')
+    number_backlog = reactive(default='')
+    version = reactive(default='dev')
+
+    def compose(self) -> ComposeResult:
+        style = '#ffff66'
+        label_names = ['Workspaces: ', 'Due Today:  ', 'Current:    ', 'Backlog:    ', 'Version:    ']
+        label_values = [
+            self.number_workspaces,
+            self.number_due_today,
+            self.number_current,
+            self.number_backlog,
+            self.version,
+        ]
+        label_ids = ['number_workspaces', 'number_due_today', 'number_current', 'number_backlog', 'version']
+
+        yield HorizontalGroup(
+            VerticalGroup(
+                *(
+                    Label(Text.assemble((text, style), str(value)), id=label_id)
+                    for text, value, label_id in zip(label_names, label_values, label_ids)
+                ),
+                id='info'
+            ),
+            Container(id='commands'),
+            VerticalGroup(
+                Label(Text('  ______   __  __', style='#ffff66 bold')),
+                Label(Text(' /_  __/  / | / /', style='#ffff66 bold')),
+                Label(Text('  / /    /  |/ / ', style='#ffff66 bold')),
+                Label(Text(' / /    / /|  /  ', style='#ffff66 bold')),
+                Label(Text('/_/ask /_/ |_/ omi', style='#ffff66 bold')),
+                id='logo',
+            ),
+        )
+
+    @staticmethod
+    def generate_label_value(value: str | int) -> Text:
+        return Text.assemble(('Workspaces: ', '#ffff66'), str(value))
+
+    def watch_number_workspaces(self, number_workspaces: str) -> None:
+        self.query_one('#number_workspaces', Label).update(number_workspaces)
+
+
 class CreateElementModal(VerticalGroup):
     def compose(self) -> ComposeResult:
         error_label = Label('', id='error_label')
@@ -113,7 +161,7 @@ class CreateTaskModal(CreateElementModal):
     def compose(self) -> ComposeResult:
         yield Input(
             placeholder='Task Name',
-            restrict=r'^[ \w\-\_\/,;.:]*$',
+            restrict=r'^[ \w\-\_\/,;.:?]*$',
             max_length=200,
             id='name',
             validate_on=[],

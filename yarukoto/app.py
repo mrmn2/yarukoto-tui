@@ -6,7 +6,7 @@ from file_io import FileIO
 from screens import CreateResourceScreen, DeleteResourceScreen
 from textual.app import App, ComposeResult
 from textual.worker import Worker, WorkerState
-from widgets import CreateTaskModal, Overview
+from widgets import CreateTaskModal, Header, Overview
 
 
 class Yarukoto(App):
@@ -29,6 +29,7 @@ class Yarukoto(App):
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
 
+        yield Header()
         yield Overview(cursor_type='row')
 
     def add_resource_to_state(self, resource: BaseResourceClass) -> None:
@@ -97,6 +98,7 @@ class Yarukoto(App):
 
     async def load_data(self) -> None:
         self.state = FileIO.load_data()
+        self.query_one(Header).number_workspaces = Header.generate_label_value(len(self.state.workspaces))
 
         # add minor delay, so that table gets mounted once and therefore the screen sice is set.
         await sleep(0.1)
