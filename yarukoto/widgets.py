@@ -6,7 +6,7 @@ from textual.containers import Container, HorizontalGroup, VerticalGroup
 from textual.coordinate import Coordinate
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import DataTable, Input, Label
+from textual.widgets import Button, DataTable, Input, Label
 from validators import DueDateValidator, TaskNameValidator
 
 
@@ -175,6 +175,9 @@ class CreateTaskModal(CreateElementModal):
             validate_on=[],
             validators=DueDateValidator(),
         )
+
+        # spaces needed for correct coloring
+        yield HorizontalGroup(Container(), Button(label='     Save     ', compact=True), Container())
 
         for widget in super().compose():
             yield widget

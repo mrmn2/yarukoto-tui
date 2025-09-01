@@ -27,7 +27,7 @@ class CreateResourceScreen(YarukotoModalScreen):
         ('escape', 'cancel_create_resource', 'Cancel Resource Creation'),
         Binding('down', 'limited_focus_next', 'Focus Next', priority=True),
         Binding('up', 'limited_focus_previous', 'Focus Previous', priority=True),
-        Binding('enter', 'submit_create_resource', 'Submit Resource Creation', priority=True),
+        Binding('ctrl+s', 'submit_create_resource', 'Submit Resource Creation', priority=True),
     ]
 
     class ResourceCreated(Message):
@@ -53,6 +53,12 @@ class CreateResourceScreen(YarukotoModalScreen):
         self.dismiss(True)
 
     def action_submit_create_resource(self) -> None:
+        self.submit_create_resource()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.submit_create_resource()
+
+    def submit_create_resource(self) -> None:
         creation_inputs = self.query(Input)
 
         creation_kwargs_dict = {creation_input.id: creation_input.value for creation_input in creation_inputs}
