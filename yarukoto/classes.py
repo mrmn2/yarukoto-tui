@@ -92,7 +92,7 @@ class Task(BaseResourceClass):
     def to_row(self) -> Row:
         return Row(
             self.id,
-            (self.name, humanize_date(self.due_datetime), self.priority, humanize_date(self.creation_datetime)),
+            (self.name, self.priority, humanize_date(self.due_datetime), humanize_date(self.creation_datetime)),
         )
 
     def to_dict(self) -> dict:
@@ -149,9 +149,15 @@ class Workspace(BaseResourceClass):
         return as_dict
 
 
-@dataclass
 class AppState:
-    workspaces: dict[str, Workspace]
-    current_workspace_id: str
-    current_resource_kind: ResourceKind
-    current_task_kind: TaskKind
+    def __init__(
+        self,
+        workspaces: dict[str, Workspace],
+        workspace_id: str,
+        resource_kind: ResourceKind = ResourceKind.TASK,
+        task_kind: TaskKind = TaskKind.CURRENT,
+    ):
+        self.workspaces = workspaces
+        self.workspace_id = workspace_id
+        self.resource_kind = resource_kind
+        self.task_kind = task_kind

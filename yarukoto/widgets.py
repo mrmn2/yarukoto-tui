@@ -1,11 +1,12 @@
-from classes import ResourceKind
-from data_processors import TasksProcessor, WorkspacesProcessor
+from datetime import datetime
+
+from classes import ResourceKind, TaskKind, Workspace
+from data_processors import DataProcessor, TasksProcessor, WorkspacesProcessor
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Container, HorizontalGroup, VerticalGroup
 from textual.coordinate import Coordinate
 from textual.message import Message
-from textual.reactive import reactive
 from textual.widgets import Button, DataTable, Input, Label
 from validators import DueDateValidator, TaskNameValidator
 
@@ -13,34 +14,34 @@ from validators import DueDateValidator, TaskNameValidator
 class AppStateMixin:
     app = None
 
-    def get_current_workspaces(self):
+    def get_current_workspaces(self) -> dict[str, Workspace]:
         return self.app.state.workspaces
 
-    def get_current_workspace_id(self):
-        return self.app.state.current_workspace_id
+    def get_workspace_id(self) -> str:
+        return self.app.state.workspace_id
 
-    def get_current_data_processor(self):
-        if self.app.state.current_resource_kind == ResourceKind.TASK:
+    def get_current_data_processor(self) -> type[DataProcessor]:
+        if self.app.state.resource_kind == ResourceKind.TASK:
             return TasksProcessor
         else:
             return WorkspacesProcessor
 
-    def get_current_task_kind(self):
-        return self.app.state.current_task_kind
+    def get_task_kind(self) -> TaskKind:
+        return self.app.state.task_kind
 
-    def get_current_resource_kind(self):
-        return self.app.state.current_resource_kind
+    def get_resource_kind(self) -> ResourceKind:
+        return self.app.state.resource_kind
 
-    def get_current_filter_dict(self):
-        if self.app.state.current_resource_kind == ResourceKind.TASK:
+    def get_current_filter_dict(self) -> dict:
+        if self.app.state.resource_kind == ResourceKind.TASK:
             workspaces = self.app.state.workspaces
-            current_workspace_id = self.app.state.current_workspace_id
-            current_workspace_name = workspaces[current_workspace_id].name
+            workspace_id = self.app.state.workspace_id
+            current_workspace_name = workspaces[workspace_id].name
 
             return {
-                'workspace_id': current_workspace_id,
+                'workspace_id': workspace_id,
                 'workspace_name': current_workspace_name,
-                'kind': self.app.state.current_task_kind,
+                'kind': self.app.state.task_kind,
             }
         else:
             return dict()
@@ -64,7 +65,7 @@ class Overview(DataTable, AppStateMixin):
         table_data = data_processor.get_table_data(workspaces, self.get_current_filter_dict())
 
         for column in table_data.columns:
-            width = self.adjust_column_width(
+            width = self._adjust_column_width(
                 column.width,
                 self.size.width,
                 len(table_data.columns),
@@ -75,10 +76,10 @@ class Overview(DataTable, AppStateMixin):
 
         for row in table_data.rows:
             self.add_row(*row.values, key=row.key)
-        # self.add_rows(row.values for row in table_data.rows)
+
         self.border_title = table_data.title
 
-    def adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
+    def _adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
         if width == 'auto':
             data_processor = self.get_current_data_processor()
 
@@ -99,37 +100,28 @@ class Overview(DataTable, AppStateMixin):
     def action_delete_resource(self):
         cell_key = self.coordinate_to_cell_key(Coordinate(column=self.cursor_column, row=self.cursor_row))
         resource_id = cell_key.row_key.value
-        resource_kind = self.get_current_resource_kind()
+        resource_kind = self.get_resource_kind()
         resource_name = self.get_row(resource_id)[0]
         self.post_message(self.OpenDeleteModal(resource_id, resource_name, resource_kind))
 
 
 class Header(HorizontalGroup, AppStateMixin):
-    number_workspaces = reactive(default='', init=False)
-    number_due_today = reactive(default='')
-    number_current = reactive(default='')
-    number_backlog = reactive(default='')
-    version = reactive(default='dev')
+    _label_title_dict = {
+        'number_due_today': 'Due Today:  ',
+        'number_current': 'Current:    ',
+        'number_backlog': 'Backlog:    ',
+        'number_workspaces': 'Workspaces: ',
+    }
 
     def compose(self) -> ComposeResult:
-        style = '#ffff66'
-        label_names = ['Workspaces: ', 'Due Today:  ', 'Current:    ', 'Backlog:    ', 'Version:    ']
-        label_values = [
-            self.number_workspaces,
-            self.number_due_today,
-            self.number_current,
-            self.number_backlog,
-            self.version,
-        ]
-        label_ids = ['number_workspaces', 'number_due_today', 'number_current', 'number_backlog', 'version']
-
         yield HorizontalGroup(
             VerticalGroup(
                 *(
-                    Label(Text.assemble((text, style), str(value)), id=label_id)
-                    for text, value, label_id in zip(label_names, label_values, label_ids)
+                    Label(self._generate_label_value(label_title, ''), id=label_id)
+                    for label_id, label_title, in zip(self._label_title_dict.keys(), self._label_title_dict.values())
                 ),
-                id='info'
+                Label(self._generate_label_value('Version:    ', 'dev'), id='version'),
+                id='info',
             ),
             Container(id='commands'),
             VerticalGroup(
@@ -142,12 +134,36 @@ class Header(HorizontalGroup, AppStateMixin):
             ),
         )
 
-    @staticmethod
-    def generate_label_value(value: str | int) -> Text:
-        return Text.assemble(('Workspaces: ', '#ffff66'), str(value))
+    def set_info_content(self):
+        workspaces = self.get_current_workspaces()
+        number_workspaces = len(workspaces)
+        number_current = 0
+        number_backlog = 0
+        number_due_today = 0
 
-    def watch_number_workspaces(self, number_workspaces: str) -> None:
-        self.query_one('#number_workspaces', Label).update(number_workspaces)
+        for workspace in workspaces.values():
+            for task in workspace.task_dict.values():
+                if task.kind == TaskKind.CURRENT:
+                    number_current += 1
+                    if task.due_datetime and (task.due_datetime.date() - datetime.now().date()).days < 0:
+                        number_due_today += 1
+                elif task.kind == TaskKind.BACKLOG:
+                    number_backlog += 1
+
+        label_value_dict = {
+            'number_workspaces': number_workspaces,
+            'number_current': number_current,
+            'number_backlog': number_backlog,
+            'number_due_today': number_due_today,
+        }
+
+        for label_id, label_title in self._label_title_dict.items():
+            label = self.query_one(f'#{label_id}', Label)
+            label.update(self._generate_label_value(label_title, label_value_dict[label_id]))
+
+    @staticmethod
+    def _generate_label_value(label_title: str, value: str | int, style='#ffff66') -> Text:
+        return Text.assemble((f'{label_title}', style), str(value))
 
 
 class CreateElementModal(VerticalGroup):

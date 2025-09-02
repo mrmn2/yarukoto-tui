@@ -18,8 +18,7 @@ Overview {
     scrollbar-color: $primary;
 
     .datatable--cursor {
-        background: $background;
-        color: $primary;
+        background: $primary;
     }
     .datatable--header {
         background: $background;

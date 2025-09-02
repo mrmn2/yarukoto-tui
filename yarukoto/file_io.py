@@ -81,9 +81,9 @@ class FileIO:
 
         app_state = AppState(
             workspaces=workspaces,
-            current_workspace_id=config_dict['current_workspace_id'],
-            current_task_kind=TaskKind(config_dict['current_task_kind']),
-            current_resource_kind=ResourceKind(config_dict['current_resource_kind']),
+            workspace_id=config_dict['workspace_id'],
+            task_kind=TaskKind(config_dict['task_kind']),
+            resource_kind=ResourceKind(config_dict['resource_kind']),
         )
 
         return app_state
@@ -118,15 +118,13 @@ class FileIO:
 
         app_state = AppState(
             workspaces={default_workspace.id: default_workspace},
-            current_workspace_id=default_workspace.id,
-            current_resource_kind=ResourceKind.TASK,
-            current_task_kind=TaskKind.CURRENT,
+            workspace_id=default_workspace.id,
         )
 
         initial_config_dict = {
-            'current_workspace_id': app_state.current_workspace_id,
-            'current_resource_kind': app_state.current_task_kind,
-            'current_task_kind': app_state.current_task_kind,
+            'workspace_id': app_state.workspace_id,
+            'resource_kind': app_state.task_kind,
+            'task_kind': app_state.task_kind,
         }
 
         with open(config_file_path, 'w') as f:
