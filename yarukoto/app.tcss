@@ -21,7 +21,7 @@ Overview {
         background: $primary;
     }
     .datatable--header {
-        background: $background;
+        background: rgba(0,0,0,0);
     }
 }
 

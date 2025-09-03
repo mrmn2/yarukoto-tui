@@ -8,12 +8,6 @@ from services import humanize_date
 
 
 @dataclass
-class Column:
-    name: str
-    width: str | int
-
-
-@dataclass
 class Row:
     key: str
     values: tuple
@@ -22,7 +16,7 @@ class Row:
 @dataclass
 class TableData:
     rows: list[Row]
-    columns: list[Column]
+    column_names: list[str]
     title: str
 
 

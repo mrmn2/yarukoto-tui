@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from classes import ResourceKind, TaskKind, Workspace
+from classes import ResourceKind, TableData, TaskKind, Workspace
 from data_processors import DataProcessor, TasksProcessor, WorkspacesProcessor
 from rich.text import Text
 from textual.app import ComposeResult
@@ -63,16 +63,10 @@ class Overview(DataTable, AppStateMixin):
         data_processor = self.get_current_data_processor()
         workspaces = self.get_current_workspaces()
         table_data = data_processor.get_table_data(workspaces, self.get_current_filter_dict())
+        widths = self._calculate_column_widths(table_data, self.size.width)
 
-        for column in table_data.columns:
-            width = self._adjust_column_width(
-                column.width,
-                self.size.width,
-                len(table_data.columns),
-                self.parent.styles.padding,
-                self.parent.styles.margin,
-            )
-            self.add_column(label=column.name, key=column.name, width=width)
+        for column_name, width in zip(table_data.column_names, widths):
+            self.add_column(label=column_name, key=column_name, width=width)
 
         for row in table_data.rows:
             self.add_row(*row.values, key=row.key)
@@ -80,20 +74,30 @@ class Overview(DataTable, AppStateMixin):
         self.border_title = table_data.title
         self.move_cursor(row=highlighted_row)
 
-    def _adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
-        if width == 'auto':
-            data_processor = self.get_current_data_processor()
+    @staticmethod
+    def _calculate_column_widths(table_data: TableData, overview_width: int) -> list[int]:
+        # by default the data table will not fill the whole screen
+        max_widths = [len(column_name) for column_name in table_data.column_names]
 
-            width = (
-                table_width
-                - (number_of_columns - 1) * (data_processor.get_default_column_width() + 3)
-                - padding.left
-                - padding.right
-                - margin.left
-                - margin.right
-            )
+        for row in table_data.rows:
+            for i, value in enumerate(row.values):
+                max_widths[i] = max(max_widths[i], len(value))
 
-        return width
+        # 3: padding left right of table (not related to css), between each row there is a distance of 2
+        unfilled = max(0, overview_width - sum(max_widths) - 3 - (len(table_data.column_names) - 1) * 2)
+        add_to_all = unfilled // len(max_widths)
+        rest = unfilled % len(max_widths)
+
+        widths = max_widths.copy()
+
+        for i, _ in enumerate(max_widths):
+            to_add = add_to_all
+            if i < rest:
+                to_add += 1
+
+            widths[i] += to_add
+
+        return widths
 
     def on_mount(self) -> None:
         self.add_column(label='Loading Data')
