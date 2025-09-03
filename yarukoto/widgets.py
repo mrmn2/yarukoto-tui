@@ -57,7 +57,7 @@ class Overview(DataTable, AppStateMixin):
             self.resource_kind = resource_kind
             super().__init__()
 
-    def set_content(self):
+    def set_content(self, highlighted_row: int = 0):
         self.clear(columns=True)
 
         data_processor = self.get_current_data_processor()
@@ -78,6 +78,7 @@ class Overview(DataTable, AppStateMixin):
             self.add_row(*row.values, key=row.key)
 
         self.border_title = table_data.title
+        self.move_cursor(row=highlighted_row)
 
     def _adjust_column_width(self, width: int, table_width: int, number_of_columns: int, padding, margin):
         if width == 'auto':

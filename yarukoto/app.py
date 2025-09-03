@@ -80,9 +80,8 @@ class Yarukoto(App):
         self.add_resource_to_state(created_resource)
 
         overview = self.query_one(Overview)
-        overview.set_content()
-        header = self.query_one(Header)
-        header.set_info_content()
+        overview.set_content(highlighted_row=overview.cursor_row)
+        self.query_one(Header).set_info_content()
 
     def on_overview_open_delete_modal(self, message: Overview.OpenDeleteModal) -> None:
         self.app.push_screen(
@@ -97,10 +96,10 @@ class Yarukoto(App):
     def on_delete_resource_screen_delete_resource(self, message: DeleteResourceScreen.DeleteResource) -> None:
         self.remove_resource_from_state(message.resource_id, message.resource_kind)
         FileIO.delete_resource(message.resource_id, message.resource_kind)
+
         overview = self.query_one(Overview)
-        overview.set_content()
-        header = self.query_one(Header)
-        header.set_info_content()
+        overview.set_content(highlighted_row=max(0, overview.row_count - 1))
+        self.query_one(Header).set_info_content()
 
     async def load_data(self) -> None:
         self.state = FileIO.load_data()
