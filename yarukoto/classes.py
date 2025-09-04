@@ -37,8 +37,9 @@ class ResourceKind(IntEnum):
         return self.name
 
 
-class BaseResourceClass(ABC):
-    DATE_TIME_FORMAT = '%Y/%m/%d-%H:%M:%S'
+class BaseResource(ABC):
+    _DATE_TIME_FORMAT = '%Y/%m/%d-%H:%M:%S'
+    _DATE_FORMAT = '%Y/%m/%d'
 
     @abstractmethod
     def to_row(self) -> Row:
@@ -48,8 +49,20 @@ class BaseResourceClass(ABC):
     def to_dict(self) -> dict:
         pass
 
+    @property
+    @abstractmethod
+    def creation_datetime(self):
+        return datetime(2025, 9, 2)
 
-class Task(BaseResourceClass):
+    @classmethod
+    def get_date_as_str(cls, date_time: datetime):
+        return date_time.strftime(cls._DATE_FORMAT)
+
+    def get_creation_time_as_str(self):
+        return self.creation_datetime.strftime(self._DATE_TIME_FORMAT)
+
+
+class Task(BaseResource):
     def __init__(
         self,
         name: str,
@@ -75,13 +88,17 @@ class Task(BaseResourceClass):
             if len(due_datetime) == 10:
                 due_datetime = f'{due_datetime}-23:59:59'
 
-            self.due_datetime = datetime.strptime(due_datetime, self.DATE_TIME_FORMAT)
+            self.due_datetime = datetime.strptime(due_datetime, self._DATE_TIME_FORMAT)
         else:
             self.due_datetime = ''
         if creation_datetime:
-            self.creation_datetime = datetime.strptime(creation_datetime, self.DATE_TIME_FORMAT)
+            self._creation_datetime = datetime.strptime(creation_datetime, self._DATE_TIME_FORMAT)
         else:
-            self.creation_datetime = datetime.now()
+            self._creation_datetime = datetime.now()
+
+    @property
+    def creation_datetime(self):
+        return self._creation_datetime
 
     def to_row(self) -> Row:
         return Row(
@@ -92,7 +109,7 @@ class Task(BaseResourceClass):
     def to_dict(self) -> dict:
         if self.due_datetime:
             # noinspection PyUnresolvedReferences
-            due_datetime = self.due_datetime.strftime(self.DATE_TIME_FORMAT)
+            due_datetime = self.due_datetime.strftime(self._DATE_TIME_FORMAT)
         else:
             due_datetime = ''
 
@@ -102,7 +119,7 @@ class Task(BaseResourceClass):
             'priority': self.priority,
             'kind': self.kind,
             'description': self.description,
-            'creation_datetime': self.creation_datetime.strftime(self.DATE_TIME_FORMAT),
+            'creation_datetime': self.creation_datetime.strftime(self._DATE_TIME_FORMAT),
             'due_datetime': due_datetime,
             'workspace_id': self.workspace_id,
         }
@@ -110,7 +127,7 @@ class Task(BaseResourceClass):
         return as_dict
 
 
-class Workspace(BaseResourceClass):
+class Workspace(BaseResource):
     def __init__(self, name: str, task_dict: dict[str, Task] = None, id: str = '', creation_datetime: str = ''):
         self.name = name
         if id:
@@ -123,9 +140,13 @@ class Workspace(BaseResourceClass):
             self.task_dict = dict()
 
         if creation_datetime:
-            self.creation_datetime = datetime.strptime(creation_datetime, self.DATE_TIME_FORMAT)
+            self._creation_datetime = datetime.strptime(creation_datetime, self._DATE_TIME_FORMAT)
         else:
-            self.creation_datetime = datetime.now()
+            self._creation_datetime = datetime.now()
+
+    @property
+    def creation_datetime(self):
+        return self._creation_datetime
 
     def to_row(self) -> Row:
         return Row(
@@ -137,7 +158,7 @@ class Workspace(BaseResourceClass):
         as_dict = {
             'name': self.name,
             'id': self.id,
-            'creation_datetime': self.creation_datetime.strftime(self.DATE_TIME_FORMAT),
+            'creation_datetime': self.creation_datetime.strftime(self._DATE_TIME_FORMAT),
         }
 
         return as_dict

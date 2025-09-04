@@ -2,7 +2,7 @@ import json
 from os import environ
 from pathlib import Path
 
-from classes import AppState, BaseResourceClass, ResourceKind, Task, TaskKind, Workspace
+from classes import AppState, BaseResource, ResourceKind, Task, TaskKind, Workspace
 
 
 class FileIO:
@@ -26,7 +26,7 @@ class FileIO:
         return app_state
 
     @classmethod
-    def write_resource(cls, resource: BaseResourceClass) -> None:
+    def write_resource(cls, resource: BaseResource) -> None:
         if isinstance(resource, Task):
             cls._write_task_to_file(resource)
         elif isinstance(resource, Workspace):

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from classes import BaseResourceClass, TableData, Task, TaskKind, Workspace
+from classes import BaseResource, TableData, Task, TaskKind, Workspace
 
 
 class DataProcessor(ABC):
@@ -17,7 +17,7 @@ class DataProcessor(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
+    def _get_table_title(cls, resources: list[BaseResource], filter_dict: dict) -> str:
         pass
 
     @classmethod
@@ -27,23 +27,23 @@ class DataProcessor(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_resources(cls, workspaces: dict[str, Workspace], filter_dict: dict) -> list[BaseResourceClass]:
+    def _get_resources(cls, workspaces: dict[str, Workspace], filter_dict: dict) -> list[BaseResource]:
         pass
 
     @staticmethod
     @abstractmethod
-    def _apply_filters(resources: list[BaseResourceClass], filter_dict: dict) -> list[BaseResourceClass]:
+    def _apply_filters(resources: list[BaseResource], filter_dict: dict) -> list[BaseResource]:
         pass
 
     @classmethod
-    def create(cls, **kwargs) -> BaseResourceClass:
+    def create(cls, **kwargs) -> BaseResource:
         created_resource = cls._create_resource(**kwargs)
 
         return created_resource
 
     @staticmethod
     @abstractmethod
-    def _create_resource(cls, **kwargs) -> BaseResourceClass:
+    def _create_resource(cls, **kwargs) -> BaseResource:
         pass
 
 
@@ -63,7 +63,7 @@ class TasksProcessor(DataProcessor):
         return tasks
 
     @classmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
+    def _get_table_title(cls, resources: list[BaseResource], filter_dict: dict) -> str:
         workspace_name = filter_dict.get('workspace_name', 'all')
         task_kind = filter_dict.get('task_kind', TaskKind.CURRENT)
 
@@ -88,7 +88,7 @@ class TasksProcessor(DataProcessor):
 
 class WorkspacesProcessor(DataProcessor):
     @classmethod
-    def _get_table_title(cls, resources: list[BaseResourceClass], filter_dict: dict) -> str:
+    def _get_table_title(cls, resources: list[BaseResource], filter_dict: dict) -> str:
         return f'WORKSPACES[{len(resources)}])'
 
     @classmethod

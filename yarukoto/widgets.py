@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from classes import ResourceKind, TableData, TaskKind, Workspace
+from classes import ResourceKind, TableData, Task, TaskKind, Workspace
 from data_processors import DataProcessor, TasksProcessor, WorkspacesProcessor
 from rich.text import Text
 from textual.app import ComposeResult
@@ -48,12 +48,27 @@ class AppStateMixin:
 
 
 class Overview(DataTable, AppStateMixin):
-    BINDINGS = [('ctrl+d', 'delete_resource', 'Delete Resource')]
+    BINDINGS = [
+        ('ctrl+d', 'delete_resource', 'Delete Resource'),
+        ('ctrl+t', 'create_task', 'Create Task'),
+        ('e', 'edit_resource', 'Edit Resource'),
+    ]
+
+    class OpenCreateModal(Message):
+        def __init__(self, resource_kind: ResourceKind) -> None:
+            self.resource_kind = resource_kind
+            super().__init__()
 
     class OpenDeleteModal(Message):
         def __init__(self, resource_id: str, resource_name: str, resource_kind: ResourceKind) -> None:
             self.resource_id = resource_id
             self.resource_name = resource_name
+            self.resource_kind = resource_kind
+            super().__init__()
+
+    class OpenEditModal(Message):
+        def __init__(self, resource_id: str, resource_kind: ResourceKind) -> None:
+            self.resource_id = resource_id
             self.resource_kind = resource_kind
             super().__init__()
 
@@ -102,12 +117,21 @@ class Overview(DataTable, AppStateMixin):
     def on_mount(self) -> None:
         self.add_column(label='Loading Data')
 
+    def action_create_task(self) -> None:
+        self.post_message(self.OpenCreateModal(ResourceKind.TASK))
+
     def action_delete_resource(self):
         cell_key = self.coordinate_to_cell_key(Coordinate(column=self.cursor_column, row=self.cursor_row))
         resource_id = cell_key.row_key.value
         resource_kind = self.get_resource_kind()
         resource_name = self.get_row(resource_id)[0]
         self.post_message(self.OpenDeleteModal(resource_id, resource_name, resource_kind))
+
+    def action_edit_resource(self):
+        cell_key = self.coordinate_to_cell_key(Coordinate(column=self.cursor_column, row=self.cursor_row))
+        resource_id = cell_key.row_key.value
+        resource_kind = self.get_resource_kind()
+        self.post_message(self.OpenEditModal(resource_id, resource_kind))
 
 
 class Header(HorizontalGroup, AppStateMixin):
@@ -171,28 +195,49 @@ class Header(HorizontalGroup, AppStateMixin):
         return Text.assemble((f'{label_title}', style), str(value))
 
 
-class CreateElementModal(VerticalGroup):
+class ResourceModal(VerticalGroup):
     def compose(self) -> ComposeResult:
         error_label = Label('', id='error_label')
         error_label.display = False
         yield error_label
 
 
-class CreateTaskModal(CreateElementModal):
+class TaskModal(ResourceModal):
+    def __init__(self, task: Task = None):
+        self.name_initial = ''
+        self.priority_initial = ''
+        self.due_datetime_initial = ''
+
+        if task:
+            self.name_initial = task.name
+            self.priority_initial = task.priority
+
+            if isinstance(task.due_datetime, datetime):
+                self.due_datetime_initial = task.get_date_as_str(task.due_datetime)
+
+        super().__init__()
+
     def compose(self) -> ComposeResult:
         yield Input(
             placeholder='Task Name',
             restrict=r'^[ \w\-\_\/,;.:?]*$',
             max_length=200,
             id='name',
+            value=self.name_initial,
             validate_on=[],
             validators=TaskNameValidator(),
         )
-        yield Input(placeholder='Priority (Between 1 and 5 - Optional)', restrict=r'^[12345]{0,1}$', id='priority')
+        yield Input(
+            placeholder='Priority (Between 1 and 5 - Optional)',
+            restrict=r'^[12345]{0,1}$',
+            id='priority',
+            value=str(self.priority_initial),
+        )
         yield Input(
             placeholder='Due Date (yyyy/mm/dd - Optional)',
             restrict=r'^[\d/]{0,10}$',
             id='due_datetime',
+            value=self.due_datetime_initial,
             validate_on=[],
             validators=DueDateValidator(),
         )
@@ -202,3 +247,8 @@ class CreateTaskModal(CreateElementModal):
 
         for widget in super().compose():
             yield widget
+
+
+class WorkspaceModal(ResourceModal):
+    def __init__(self, workspace: Workspace = None):
+        super().__init__()

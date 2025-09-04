@@ -1,11 +1,11 @@
-from classes import ResourceKind
+from classes import BaseResource, ResourceKind, Task, Workspace
 from textual.app import Binding, ComposeResult
 from textual.containers import Container, Grid
 from textual.message import Message
 from textual.screen import ModalScreen
 from textual.validation import ValidationResult
 from textual.widgets import Button, Input, Label
-from widgets import CreateElementModal
+from widgets import TaskModal, WorkspaceModal
 
 
 class YarukotoModalScreen(ModalScreen):
@@ -22,7 +22,7 @@ class YarukotoModalScreen(ModalScreen):
             self.focus_previous()
 
 
-class CreateResourceScreen(YarukotoModalScreen):
+class BaseResourceScreen(YarukotoModalScreen):
     BINDINGS = [
         ('escape', 'cancel_create_resource', 'Cancel Resource Creation'),
         Binding('down', 'limited_focus_next', 'Focus Next', priority=True),
@@ -30,50 +30,96 @@ class CreateResourceScreen(YarukotoModalScreen):
         Binding('ctrl+s', 'submit_create_resource', 'Submit Resource Creation', priority=True),
     ]
 
-    class ResourceCreated(Message):
-        def __init__(self, creation_kwargs_dict: dict, resource_kind: ResourceKind) -> None:
-            self.creation_kwargs_dict = creation_kwargs_dict
-            self.resource_kind = resource_kind
-            super().__init__()
+    def _process_modal_inputs(self) -> dict:
+        modal_inputs = self.query(Input)
 
-    def __init__(self, create_modal_class: type[CreateElementModal], resource_kind: ResourceKind, id='creation_screen'):
-        super().__init__(id=id)
+        input_kwargs_dict = {modal_input.id: modal_input.value for modal_input in modal_inputs}
 
-        self.create_modal_class = create_modal_class
-        self.resource_kind = resource_kind
-
-    def compose(self) -> ComposeResult:
-        # noinspection PyCallingNonCallable
-        create_modal = self.create_modal_class()
-        create_modal.border_title = f'CREATE {str(self.resource_kind)}'
-
-        yield create_modal
-
-    def action_cancel_create_resource(self) -> None:
-        self.dismiss(True)
-
-    def action_submit_create_resource(self) -> None:
-        self.submit_create_resource()
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.submit_create_resource()
-
-    def submit_create_resource(self) -> None:
-        creation_inputs = self.query(Input)
-
-        creation_kwargs_dict = {creation_input.id: creation_input.value for creation_input in creation_inputs}
-
-        for creation_input in creation_inputs:
-            input_value = creation_input.value.strip()
-            validation_result = creation_input.validate(input_value)
+        for modal_input in modal_inputs:
+            input_value = modal_input.value.strip()
+            validation_result = modal_input.validate(input_value)
 
             if validation_result and validation_result != ValidationResult.success():
                 error_label = self.query_one('#error_label', Label)
                 error_label.update(validation_result.failures[0].description)
                 error_label.display = True
-                return
+                return dict()
 
-        self.post_message(self.ResourceCreated(creation_kwargs_dict, self.resource_kind))
+        return input_kwargs_dict
+
+    def _submit(self):
+        pass
+
+    def action_cancel_create_resource(self) -> None:
+        self.dismiss(True)
+
+    def action_submit_create_resource(self) -> None:
+        self._submit()
+
+    def on_button_pressed(self, _) -> None:
+        self._submit()
+
+
+class CreateResourceScreen(BaseResourceScreen):
+    class ResourceCreated(Message):
+        def __init__(self, kwargs_dict: dict, resource_kind: ResourceKind) -> None:
+            self.kwargs_dict = kwargs_dict
+            self.resource_kind = resource_kind
+            super().__init__()
+
+    def __init__(self, resource_kind: ResourceKind, id: str = 'creation_screen'):
+        super().__init__(id=id)
+        self.resource_kind = resource_kind
+
+    def compose(self) -> ComposeResult:
+        if self.resource_kind == ResourceKind.TASK:
+            create_modal = TaskModal()
+        else:
+            create_modal = WorkspaceModal()
+        create_modal.border_title = f'CREATE {str(self.resource_kind)}'
+
+        yield create_modal
+
+    def _submit(self) -> None:
+        input_kwargs_dict = self._process_modal_inputs()
+
+        self.post_message(self.ResourceCreated(input_kwargs_dict, self.resource_kind))
+        self.dismiss(True)
+
+
+class EditResourceScreen(BaseResourceScreen):
+    class ResourceEdited(Message):
+        def __init__(self, kwargs_dict: dict, resource_kind: ResourceKind, resource_id: str) -> None:
+            self.kwargs_dict = kwargs_dict
+            self.resource_kind = resource_kind
+            self.resource_id = resource_id
+            super().__init__()
+
+    def __init__(self, resource: BaseResource, id: str = 'edit_screen'):
+        super().__init__(id=id)
+        self.resource = resource
+
+    def compose(self) -> ComposeResult:
+        if isinstance(self.resource, Task):
+            create_modal = TaskModal(self.resource)
+            create_modal.border_title = 'EDIT TASK'
+        elif isinstance(self.resource, Workspace):
+            create_modal = WorkspaceModal(self.resource)
+            create_modal.border_title = 'EDIT WORKSPACE'
+        else:
+            create_modal = None
+
+        yield create_modal
+
+    def _submit(self) -> None:
+        input_kwargs_dict = self._process_modal_inputs()
+
+        if isinstance(self.resource, Task):
+            resource_kind = ResourceKind.TASK
+        else:
+            resource_kind = ResourceKind.WORKSPACE
+
+        self.post_message(self.ResourceEdited(input_kwargs_dict, resource_kind, self.resource.id))
         self.dismiss(True)
 
 
