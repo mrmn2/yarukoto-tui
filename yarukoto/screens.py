@@ -24,10 +24,10 @@ class YarukotoModalScreen(ModalScreen):
 
 class BaseResourceScreen(YarukotoModalScreen):
     BINDINGS = [
-        ('escape', 'cancel_create_resource', 'Cancel Resource Creation'),
+        ('escape', 'cancel', 'Cancel'),
         Binding('down', 'limited_focus_next', 'Focus Next', priority=True),
         Binding('up', 'limited_focus_previous', 'Focus Previous', priority=True),
-        Binding('ctrl+s', 'submit_create_resource', 'Submit Resource Creation', priority=True),
+        Binding('ctrl+s', 'submit', 'Submit', priority=True),
     ]
 
     def _process_modal_inputs(self) -> dict:
@@ -50,10 +50,10 @@ class BaseResourceScreen(YarukotoModalScreen):
     def _submit(self):
         pass
 
-    def action_cancel_create_resource(self) -> None:
+    def action_cancel(self) -> None:
         self.dismiss(True)
 
-    def action_submit_create_resource(self) -> None:
+    def action_submit(self) -> None:
         self._submit()
 
     def on_button_pressed(self, _) -> None:

@@ -52,6 +52,7 @@ class BaseResource(ABC):
     @property
     @abstractmethod
     def creation_datetime(self):
+        # return some dummy value, function will be overwritten by children
         return datetime(2025, 9, 2)
 
     @classmethod

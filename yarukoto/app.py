@@ -36,7 +36,7 @@ class Yarukoto(App):
         elif isinstance(resource, Workspace):
             self.state.workspaces[resource.id] = resource
 
-    def _remove_resource_from_state(self, resource_id: str, resource_kind: ResourceKind):
+    def _remove_resource_from_state(self, resource_id: str, resource_kind: ResourceKind) -> None:
         if resource_kind == ResourceKind.TASK:
             workspace_id = self.state.workspace_id
             current_workspace = self.state.workspaces[workspace_id]
@@ -62,6 +62,7 @@ class Yarukoto(App):
             header.set_info_content()
 
     def on_resize(self, _) -> None:
+        # don't set content if app just started
         if self.state:
             overview = self.query_one(Overview)
             overview.set_content()
@@ -114,9 +115,9 @@ class Yarukoto(App):
         if resource_kind == ResourceKind.TASK:
             kwargs_dict['workspace_id'] = self.state.workspace_id
 
-        created_resource = data_processor.create(**kwargs_dict)
-        FileIO.write_resource(created_resource)
-        self._add_resource_to_state(created_resource)
+        resource = data_processor.create(**kwargs_dict)
+        FileIO.write_resource(resource)
+        self._add_resource_to_state(resource)
 
         overview = self.query_one(Overview)
         overview.set_content(highlighted_row=overview.cursor_row)

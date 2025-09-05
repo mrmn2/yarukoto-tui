@@ -174,7 +174,7 @@ class Header(HorizontalGroup, AppStateMixin):
             for task in workspace.task_dict.values():
                 if task.kind == TaskKind.CURRENT:
                     number_current += 1
-                    if task.due_datetime and (task.due_datetime.date() - datetime.now().date()).days < 0:
+                    if task.due_datetime and (task.due_datetime.date() - datetime.now().date()).days < 1:
                         number_due_today += 1
                 elif task.kind == TaskKind.BACKLOG:
                     number_backlog += 1
