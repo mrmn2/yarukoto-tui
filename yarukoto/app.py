@@ -9,10 +9,10 @@ from textual.worker import Worker, WorkerState
 from widgets import Header, Overview
 
 
-class Yarukoto(App):
+class TaskNomi(App):
     """A Textual app to manage stopwatches."""
 
-    TITLE = 'Yarukoto'
+    TITLE = 'TaskNomi'
     ENABLE_COMMAND_PALETTE = False
     CSS_PATH = 'app.tcss'
 
@@ -134,5 +134,5 @@ class Yarukoto(App):
 
 
 if __name__ == '__main__':
-    app = Yarukoto()
+    app = TaskNomi()
     app.run(mouse=False)

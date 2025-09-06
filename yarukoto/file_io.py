@@ -10,7 +10,7 @@ class FileIO:
 
     @staticmethod
     def _get_app_path() -> Path:
-        return Path(environ.get('HOME')) / '.yarukoto'
+        return Path(environ.get('HOME')) / '.tasknomi'
 
     @classmethod
     def load_data(cls) -> AppState:

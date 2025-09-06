@@ -8,7 +8,7 @@ from textual.widgets import Button, Input, Label
 from widgets import TaskModal, WorkspaceModal
 
 
-class YarukotoModalScreen(ModalScreen):
+class TaskNomiModalScreen(ModalScreen):
     def action_limited_focus_next(self) -> None:
         current_index = self.focus_chain.index(self.focused)
 
@@ -22,7 +22,7 @@ class YarukotoModalScreen(ModalScreen):
             self.focus_previous()
 
 
-class BaseResourceScreen(YarukotoModalScreen):
+class BaseResourceScreen(TaskNomiModalScreen):
     BINDINGS = [
         ('escape', 'cancel', 'Cancel'),
         Binding('down', 'limited_focus_next', 'Focus Next', priority=True),
@@ -123,7 +123,7 @@ class EditResourceScreen(BaseResourceScreen):
         self.dismiss(True)
 
 
-class DeleteResourceScreen(YarukotoModalScreen):
+class DeleteResourceScreen(TaskNomiModalScreen):
     BINDINGS = [
         ('escape', 'cancel_delete_resource', 'Cancel Resource Creation'),
         Binding('right', 'limited_focus_next', 'Focus Next', priority=True),

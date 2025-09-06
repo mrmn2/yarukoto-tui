@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "yarukoto-tui"
+name = "TaskNomi"
 version = "0.0.1"
 description = ""
 authors = ["mrmn2"]
